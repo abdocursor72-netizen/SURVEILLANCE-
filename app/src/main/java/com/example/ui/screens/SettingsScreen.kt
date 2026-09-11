@@ -1,5 +1,7 @@
 package com.example.ui.screens
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -47,6 +49,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.NightlightRound
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Restore
@@ -67,12 +71,19 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.SupportAgent
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Forum
 import com.example.data.backup.BackupManager
 import com.example.data.backup.BackupMetadata
 import com.example.data.backup.LocalBackupFileItem
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -159,6 +170,8 @@ fun SettingsScreen(viewModel: ReportViewModel) {
     var showWhatsNewDialog by remember { mutableStateOf(false) }
     var showUpdateDialog by remember { mutableStateOf(false) }
     var showBackupDialog by remember { mutableStateOf(false) }
+    var showWhatsAppSupportDialog by remember { mutableStateOf(false) }
+    var showNotificationsDialog by remember { mutableStateOf(false) }
 
     val isAutoRefreshEnabled by viewModel.isAutoRefreshEnabled.collectAsState()
     val autoRefreshInterval by viewModel.autoRefreshInterval.collectAsState()
@@ -201,18 +214,26 @@ fun SettingsScreen(viewModel: ReportViewModel) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Settings Items matching Screenshot 2
+            // Organized & Categorized Settings Sections
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // 1. المستخدم (User)
+                // ==================== 1. قسم الحساب ====================
+                item {
+                    SettingsSectionHeader(
+                        title = "الحساب",
+                        icon = Icons.Default.Person
+                    )
+                }
+
+                // 1.1 المستخدم (User)
                 item {
                     SettingsCardItem(
                         title = "المستخدم",
-                        subtitle = if (viewModel.prefs.defaultObserverName.isNotBlank()) viewModel.prefs.defaultObserverName else "لم يتم التحديد",
+                        subtitle = if (viewModel.prefs.defaultObserverName.isNotBlank()) viewModel.prefs.defaultObserverName else "لم يتم التحديد (انقر لتعيين الاسم الافتراضي)",
                         icon = Icons.Default.Person,
                         iconTint = AccentInfoBlue,
                         testTag = "settings_item_user",
@@ -223,11 +244,11 @@ fun SettingsScreen(viewModel: ReportViewModel) {
                     )
                 }
 
-                // 2. العينات (Samples)
+                // 1.2 العينات (Samples)
                 item {
                     SettingsCardItem(
-                        title = "العينات",
-                        subtitle = "${registeredSamples.size} عينات مسجلة",
+                        title = "العينات المسجلة",
+                        subtitle = "${registeredSamples.size} عينات مسجلة ومتاحة للاستخدام",
                         icon = Icons.Default.Inventory2,
                         iconTint = Color(0xFFF97316),
                         testTag = "settings_item_samples",
@@ -235,26 +256,27 @@ fun SettingsScreen(viewModel: ReportViewModel) {
                     )
                 }
 
-                // 3. التصدير (Export) - Custom expandable card matching user screenshots
+                // ==================== 2. قسم تفضيلات الإشعارات ====================
                 item {
-                    ExportSettingsCard(
-                        viewModel = viewModel
+                    SettingsSectionHeader(
+                        title = "تفضيلات الإشعارات",
+                        icon = Icons.Default.Notifications
                     )
                 }
 
-                // 3.5. النسخ الاحتياطي (Backup & Restore)
+                // 2.1 تفضيلات الإشعارات (Notifications Preferences Dialog)
                 item {
                     SettingsCardItem(
-                        title = "النسخ الاحتياطي",
-                        subtitle = "حفظ واستعادة بيانات التقارير والعينات بأمان",
-                        icon = Icons.Default.Backup,
-                        iconTint = Color(0xFF0D9488),
-                        testTag = "settings_item_backup",
-                        onClick = { showBackupDialog = true }
+                        title = "تفضيلات الإشعارات",
+                        subtitle = if (viewModel.prefs.isNotificationsEnabled) "التنبيهات مفعلة (التحديثات، النسخ الاحتياطي، الأمراض)" else "كافة التنبيهات متوقفة",
+                        icon = Icons.Default.Notifications,
+                        iconTint = Color(0xFFF59E0B),
+                        testTag = "settings_item_notifications",
+                        onClick = { showNotificationsDialog = true }
                     )
                 }
 
-                // 4. المظهر (Appearance)
+                // 2.2 المظهر (Appearance)
                 item {
                     SettingsCardItem(
                         title = "المظهر",
@@ -266,7 +288,7 @@ fun SettingsScreen(viewModel: ReportViewModel) {
                     )
                 }
 
-                // 5. التحديث التلقائي (Auto-Refresh)
+                // 2.3 التحديث التلقائي (Auto-Refresh)
                 item {
                     Surface(
                         shape = RoundedCornerShape(16.dp),
@@ -346,19 +368,34 @@ fun SettingsScreen(viewModel: ReportViewModel) {
                     }
                 }
 
-                // 6. المزيد (More - الجمع التلقائي والمعلومات)
+                // ==================== 3. قسم البيانات والتصدير ====================
                 item {
-                    SettingsCardItem(
-                        title = "المزيد",
-                        subtitle = "الجمع التلقائي والمعلومات",
-                        icon = Icons.Default.AddCircle,
-                        iconTint = AccentTeal,
-                        testTag = "settings_item_more",
-                        onClick = { showMoreDialog = true }
+                    SettingsSectionHeader(
+                        title = "البيانات والتصدير",
+                        icon = Icons.Default.FileUpload
                     )
                 }
 
-                // 6. المهملات (Trash)
+                // 3.1 التصدير (Export)
+                item {
+                    ExportSettingsCard(
+                        viewModel = viewModel
+                    )
+                }
+
+                // 3.2 النسخ الاحتياطي (Backup & Restore)
+                item {
+                    SettingsCardItem(
+                        title = "النسخ الاحتياطي",
+                        subtitle = "حفظ واستعادة بيانات التقارير والعينات بأمان",
+                        icon = Icons.Default.Backup,
+                        iconTint = Color(0xFF0D9488),
+                        testTag = "settings_item_backup",
+                        onClick = { showBackupDialog = true }
+                    )
+                }
+
+                // 3.3 المهملات (Trash)
                 item {
                     SettingsCardItem(
                         title = "المهملات",
@@ -370,7 +407,71 @@ fun SettingsScreen(viewModel: ReportViewModel) {
                     )
                 }
 
-                // 7. التهيئة (Reset)
+                // ==================== 4. قسم الدعم والمساعدة ====================
+                item {
+                    SettingsSectionHeader(
+                        title = "الدعم والمساعدة",
+                        icon = Icons.Default.SupportAgent
+                    )
+                }
+
+                // 4.1 الدعم والتحديثات عبر واتساب (WhatsApp Support & Updates)
+                item {
+                    SettingsCardItem(
+                        title = "الدعم والتحديثات (واتساب)",
+                        subtitle = "طلب أحدث إصدار وتواصل مباشر مع الدعم الفني",
+                        icon = Icons.Default.Chat,
+                        iconTint = Color(0xFF25D366),
+                        testTag = "settings_item_whatsapp_support",
+                        onClick = { showWhatsAppSupportDialog = true }
+                    )
+                }
+
+                // 4.2 فحص التحديثات السحابية
+                item {
+                    SettingsCardItem(
+                        title = "فحص التحديثات",
+                        subtitle = "التحقق من الإصدارات الجديدة عبر السيرفر و GitHub",
+                        icon = Icons.Default.CloudDownload,
+                        iconTint = EmeraldPrimary,
+                        testTag = "settings_item_cloud_update",
+                        onClick = { showUpdateDialog = true }
+                    )
+                }
+
+                // 4.3 ما الجديد في هذا الإصدار
+                item {
+                    SettingsCardItem(
+                        title = "ما الجديد في هذا الإصدار",
+                        subtitle = "سجل التغييرات ومميزات الإصدار v${AppPreferences.APP_VERSION}",
+                        icon = Icons.Default.NewReleases,
+                        iconTint = Color(0xFF3B82F6),
+                        testTag = "settings_item_whats_new",
+                        onClick = { showWhatsNewDialog = true }
+                    )
+                }
+
+                // ==================== 5. قسم النظام والصيانة ====================
+                item {
+                    SettingsSectionHeader(
+                        title = "النظام والصيانة",
+                        icon = Icons.Default.Settings
+                    )
+                }
+
+                // 5.1 المزيد (More)
+                item {
+                    SettingsCardItem(
+                        title = "المزيد",
+                        subtitle = "الجمع التلقائي والمعلومات المتقدمة",
+                        icon = Icons.Default.AddCircle,
+                        iconTint = AccentTeal,
+                        testTag = "settings_item_more",
+                        onClick = { showMoreDialog = true }
+                    )
+                }
+
+                // 5.2 التهيئة (Reset)
                 item {
                     SettingsCardItem(
                         title = "التهيئة",
@@ -493,6 +594,43 @@ fun SettingsScreen(viewModel: ReportViewModel) {
                                         textDecoration = TextDecoration.Underline
                                     ),
                                     color = Color(0xFF38BDF8)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            Text(
+                                text = "•",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                                color = TextSecondary
+                            )
+
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            // "الدعم عبر واتساب"
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable { showWhatsAppSupportDialog = true }
+                                    .padding(horizontal = 4.dp, vertical = 4.dp)
+                                    .testTag("footer_whatsapp_support_link")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Chat,
+                                    contentDescription = null,
+                                    tint = Color(0xFF25D366),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "دعم واتساب",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        textDecoration = TextDecoration.Underline
+                                    ),
+                                    color = Color(0xFF25D366)
                                 )
                             }
                         }
@@ -3316,6 +3454,362 @@ fun SettingsScreen(viewModel: ReportViewModel) {
             }
         )
     }
+
+    // 11. WhatsApp Support & Updates Dialog
+    if (showWhatsAppSupportDialog) {
+        WhatsAppSupportDialog(
+            viewModel = viewModel,
+            onDismiss = { showWhatsAppSupportDialog = false }
+        )
+    }
+
+    // 12. Notification Preferences Dialog
+    if (showNotificationsDialog) {
+        NotificationPreferencesDialog(
+            viewModel = viewModel,
+            onDismiss = { showNotificationsDialog = false }
+        )
+    }
+}
+
+@Composable
+fun SettingsSectionHeader(
+    title: String,
+    icon: ImageVector? = null,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(top = 10.dp, bottom = 4.dp, start = 4.dp, end = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (icon != null) {
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(EmeraldPrimary.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = EmeraldPrimary,
+                    modifier = Modifier.size(15.dp)
+                )
+            }
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            ),
+            color = EmeraldPrimary
+        )
+    }
+}
+
+@Composable
+fun NotificationPreferencesDialog(
+    viewModel: ReportViewModel,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    var isEnabled by remember { mutableStateOf(viewModel.prefs.isNotificationsEnabled) }
+    var notifyUpdates by remember { mutableStateOf(viewModel.prefs.notifyOnAppUpdate) }
+    var notifyBackup by remember { mutableStateOf(viewModel.prefs.notifyOnBackupReminder) }
+    var notifyThreshold by remember { mutableStateOf(viewModel.prefs.notifyOnDiseaseThreshold) }
+
+    Dialog(
+        onDismissRequest = onDismiss
+    ) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.surface,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp)
+                .testTag("notification_preferences_dialog")
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                // Header
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "إغلاق",
+                            tint = TextSecondary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "تفضيلات الإشعارات",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "إدارة التنبيهات وإشعارات التطبيق",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
+                                color = TextSecondary
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFF59E0B).copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = Color(0xFFD97706),
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Master Toggle: All notifications
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isEnabled) EmeraldPrimary.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                    border = BorderStroke(1.dp, if (isEnabled) EmeraldPrimary.copy(alpha = 0.4f) else Color.Transparent),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Switch(
+                            checked = isEnabled,
+                            onCheckedChange = { isEnabled = it },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = EmeraldPrimary
+                            ),
+                            modifier = Modifier.testTag("notifications_master_switch")
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "تفعيل كافة التنبيهات",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = if (isEnabled) "التنبيهات والإشعارات نشطة" else "كافة الإشعارات متوقفة تماماً",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                                    color = if (isEnabled) EmeraldPrimary else TextSecondary
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isEnabled) EmeraldPrimary.copy(alpha = 0.15f) else TextSecondary.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = if (isEnabled) Icons.Default.NotificationsActive else Icons.Default.Notifications,
+                                    contentDescription = null,
+                                    tint = if (isEnabled) EmeraldPrimary else TextSecondary,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Sub-options (enabled only if master is on)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    NotificationPreferenceRow(
+                        title = "تنبيهات التحديثات الجديدة",
+                        subtitle = "إشعار فوري عند توفر نسخة أحدث من التطبيق",
+                        icon = Icons.Default.NewReleases,
+                        iconTint = Color(0xFF3B82F6),
+                        checked = isEnabled && notifyUpdates,
+                        enabled = isEnabled,
+                        onCheckedChange = { notifyUpdates = it }
+                    )
+
+                    NotificationPreferenceRow(
+                        title = "تذكير النسخ الاحتياطي الدوري",
+                        subtitle = "تذكير بأخذ نسخة احتياطية دورية لحفظ التقارير",
+                        icon = Icons.Default.Backup,
+                        iconTint = Color(0xFF0D9488),
+                        checked = isEnabled && notifyBackup,
+                        enabled = isEnabled,
+                        onCheckedChange = { notifyBackup = it }
+                    )
+
+                    NotificationPreferenceRow(
+                        title = "تنبيه تجاوز العتبة الوبائية (20%)",
+                        subtitle = "تنبيه عاجل عند تسجيل نسبة إصابة حرجة في العينات",
+                        icon = Icons.Default.Warning,
+                        iconTint = AccentVirusRed,
+                        checked = isEnabled && notifyThreshold,
+                        enabled = isEnabled,
+                        onCheckedChange = { notifyThreshold = it }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Actions
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    TextButton(
+                        onClick = onDismiss,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text("إلغاء", color = TextSecondary)
+                    }
+
+                    Button(
+                        onClick = {
+                            viewModel.prefs.isNotificationsEnabled = isEnabled
+                            viewModel.prefs.notifyOnAppUpdate = notifyUpdates
+                            viewModel.prefs.notifyOnBackupReminder = notifyBackup
+                            viewModel.prefs.notifyOnDiseaseThreshold = notifyThreshold
+                            Toast.makeText(context, "تم حفظ تفضيلات الإشعارات بنجاح", Toast.LENGTH_SHORT).show()
+                            onDismiss()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("save_notifications_prefs_button")
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("حفظ", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NotificationPreferenceRow(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    iconTint: Color,
+    checked: Boolean,
+    enabled: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (enabled) 0.3f else 0.15f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+                enabled = enabled,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = EmeraldPrimary
+                )
+            )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f, fill = false)
+            ) {
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        ),
+                        color = if (enabled) MaterialTheme.colorScheme.onSurface else TextTertiary
+                    )
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                        color = if (enabled) TextSecondary else TextTertiary
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(30.dp)
+                        .clip(CircleShape)
+                        .background(iconTint.copy(alpha = if (enabled) 0.12f else 0.04f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = if (enabled) iconTint else TextTertiary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -4001,4 +4495,443 @@ private fun ReportElementToggleRow(
         )
     }
 }
+
+/**
+ * WhatsApp Support & Updates Dialog
+ */
+@Composable
+private fun WhatsAppSupportDialog(
+    viewModel: ReportViewModel,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    var customNumber by remember { mutableStateOf(viewModel.prefs.whatsappContactNumber) }
+    var customGroupUrl by remember { mutableStateOf(viewModel.prefs.whatsappGroupUrl) }
+    var showEditConfig by remember { mutableStateOf(false) }
+
+    val defaultRequestUpdateMessage = "مرحباً، أود الحصول على رابط تحميل أحدث إصدار APK من تطبيق مراقبة الأمراض SF-Surveillance (الإصدار المثبت لدي حالياً: v${AppPreferences.APP_VERSION})."
+    val defaultSupportMessage = "مرحباً، أحتاج إلى استفسار ودعم فني بخصوص تطبيق مراقبة الأمراض SF-Surveillance v${AppPreferences.APP_VERSION}."
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF25D366)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Chat,
+                        contentDescription = "WhatsApp",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Column {
+                    Text(
+                        text = "الدعم الفني والتحديثات",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "عبر تطبيق واتساب • v${AppPreferences.APP_VERSION}",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = TextSecondary
+                    )
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Intro text
+                Text(
+                    text = "يمكنك طلب أحدث نسخة APK أو التواصل مباشرة مع المطور للحصول على الدعم الفني والمساعدة السريعة:",
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp),
+                    color = TextSecondary
+                )
+
+                // 1. Request Update Button Card
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0xFFF0FDF4),
+                    border = BorderStroke(1.dp, Color(0xFFBBF7D0)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudDownload,
+                                contentDescription = null,
+                                tint = Color(0xFF16A34A),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = "طلب أحدث إصدار (APK)",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                ),
+                                color = Color(0xFF166534)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "إرسال رسالة واتساب لطلب ملف APK الجديد أو رابط التنزيل المباشر.",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                            color = Color(0xFF15803D)
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Button(
+                            onClick = {
+                                launchWhatsApp(
+                                    context = context,
+                                    phone = customNumber,
+                                    message = defaultRequestUpdateMessage
+                                )
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF25D366),
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(42.dp)
+                                .testTag("whatsapp_request_update_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Chat,
+                                contentDescription = null,
+                                modifier = Modifier.size(17.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "طلب التحديث على واتساب",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                            )
+                        }
+                    }
+                }
+
+                // 2. Technical Support Card
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color(0xFFF8FAFC),
+                    border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SupportAgent,
+                                contentDescription = null,
+                                tint = Color(0xFF0284C7),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                text = "الدعم الفني والاستفسارات",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                ),
+                                color = Color(0xFF0F172A)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            text = "تواصل مباشر للإبلاغ عن مشكلة، اقتراح ميزة، أو طلب مساعدة في الاستخدام.",
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                            color = TextSecondary
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        OutlinedButton(
+                            onClick = {
+                                launchWhatsApp(
+                                    context = context,
+                                    phone = customNumber,
+                                    message = defaultSupportMessage
+                                )
+                            },
+                            border = BorderStroke(1.dp, Color(0xFF0284C7)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(42.dp)
+                                .testTag("whatsapp_contact_support_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = null,
+                                tint = Color(0xFF0284C7),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "مراسلة الدعم الفني",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF0284C7)
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // 3. Group / Channel Card (if configured or to join)
+                if (customGroupUrl.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFFFAF5FF),
+                        border = BorderStroke(1.dp, Color(0xFFE9D5FF)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Link,
+                                    contentDescription = null,
+                                    tint = Color(0xFF9333EA),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = "قناة / مجموعة التحديثات",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    ),
+                                    color = Color(0xFF581C87)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            Text(
+                                text = "الانضمام للمجموعة لتلقي روابط الإصدارات الجديدة فور إطلاقها.",
+                                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.5.sp),
+                                color = Color(0xFF7E22CE)
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            Button(
+                                onClick = {
+                                    launchWhatsApp(
+                                        context = context,
+                                        directUrl = customGroupUrl
+                                    )
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF9333EA),
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(42.dp)
+                                    .testTag("whatsapp_join_group_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.OpenInNew,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "الانضمام لمجموعة واتساب",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 4. Config section toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { showEditConfig = !showEditConfig }
+                        .padding(vertical = 6.dp, horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Settings,
+                            contentDescription = null,
+                            tint = TextSecondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "إعدادات رقم واتساب ورابط المجموعة",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = TextSecondary
+                        )
+                    }
+                    Icon(
+                        imageVector = if (showEditConfig) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = TextSecondary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
+                if (showEditConfig) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Column {
+                            Text(
+                                text = "رقم واتساب المطور / الدعم:",
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            OutlinedTextField(
+                                value = customNumber,
+                                onValueChange = { customNumber = it },
+                                placeholder = { Text("مثال: 212600000000 أو فارغ", fontSize = 12.sp) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("whatsapp_number_input"),
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+
+                        Column {
+                            Text(
+                                text = "رابط مجموعة / قناة واتساب (اختياري):",
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            OutlinedTextField(
+                                value = customGroupUrl,
+                                onValueChange = { customGroupUrl = it },
+                                placeholder = { Text("https://chat.whatsapp.com/...", fontSize = 12.sp) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("whatsapp_group_url_input"),
+                                singleLine = true,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                viewModel.prefs.whatsappContactNumber = customNumber.trim()
+                                viewModel.prefs.whatsappGroupUrl = customGroupUrl.trim()
+                                Toast.makeText(context, "تم حفظ إعدادات واتساب", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth().height(38.dp)
+                        ) {
+                            Text("حفظ الإعدادات", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE2E8F0), contentColor = Color(0xFF334155)),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("إغلاق", fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+/**
+ * Helper to launch WhatsApp intent safely with web fallback
+ */
+private fun launchWhatsApp(
+    context: Context,
+    phone: String = "",
+    message: String = "",
+    directUrl: String = ""
+) {
+    try {
+        if (directUrl.isNotBlank() && (directUrl.startsWith("http://") || directUrl.startsWith("https://") || directUrl.startsWith("whatsapp://"))) {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(directUrl))
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            context.startActivity(intent)
+            return
+        }
+
+        val cleanPhone = phone.replace("+", "").replace(" ", "").replace("-", "").trim()
+        val encodedMsg = Uri.encode(message)
+        val urlStr = if (cleanPhone.isNotBlank()) {
+            "https://api.whatsapp.com/send?phone=$cleanPhone&text=$encodedMsg"
+        } else {
+            "https://api.whatsapp.com/send?text=$encodedMsg"
+        }
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(urlStr))
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "تعذر فتح تطبيق واتساب: ${e.localizedMessage ?: "يرجى التأكد من تثبيت واتساب"}", Toast.LENGTH_SHORT).show()
+    }
+}
+
 

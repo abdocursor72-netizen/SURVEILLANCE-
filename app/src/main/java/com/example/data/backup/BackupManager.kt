@@ -45,7 +45,7 @@ data class LocalBackupFileItem(
 
 object BackupManager {
 
-    private const val IDENTIFIER = "SF_SURVEILLANCE_BACKUP"
+    private const val IDENTIFIER = "Surveillance-maladie_BACKUP"
     private const val BACKUP_DIR_NAME = "sf_backups"
 
     /**

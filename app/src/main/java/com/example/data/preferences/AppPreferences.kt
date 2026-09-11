@@ -67,6 +67,22 @@ class AppPreferences(context: Context) {
         get() = prefs.getString(KEY_WHATSAPP_GROUP_URL, "") ?: ""
         set(value) = prefs.edit().putString(KEY_WHATSAPP_GROUP_URL, value).apply()
 
+    var isNotificationsEnabled: Boolean
+        get() = prefs.getBoolean(KEY_NOTIFICATIONS_ENABLED, true)
+        set(value) = prefs.edit().putBoolean(KEY_NOTIFICATIONS_ENABLED, value).apply()
+
+    var notifyOnAppUpdate: Boolean
+        get() = prefs.getBoolean(KEY_NOTIFY_APP_UPDATE, true)
+        set(value) = prefs.edit().putBoolean(KEY_NOTIFY_APP_UPDATE, value).apply()
+
+    var notifyOnBackupReminder: Boolean
+        get() = prefs.getBoolean(KEY_NOTIFY_BACKUP_REMINDER, true)
+        set(value) = prefs.edit().putBoolean(KEY_NOTIFY_BACKUP_REMINDER, value).apply()
+
+    var notifyOnDiseaseThreshold: Boolean
+        get() = prefs.getBoolean(KEY_NOTIFY_DISEASE_THRESHOLD, true)
+        set(value) = prefs.edit().putBoolean(KEY_NOTIFY_DISEASE_THRESHOLD, value).apply()
+
     companion object {
         const val DEVELOPER_NAME = "by ABDALKAYOUM MOUSAID."
         const val APP_TITLE = "surveillance-maladie"
@@ -89,5 +105,9 @@ class AppPreferences(context: Context) {
         private const val KEY_UPDATE_SERVER_URL = "pref_update_server_url"
         private const val KEY_WHATSAPP_NUMBER = "pref_whatsapp_number"
         private const val KEY_WHATSAPP_GROUP_URL = "pref_whatsapp_group_url"
+        private const val KEY_NOTIFICATIONS_ENABLED = "pref_notifications_enabled"
+        private const val KEY_NOTIFY_APP_UPDATE = "pref_notify_app_update"
+        private const val KEY_NOTIFY_BACKUP_REMINDER = "pref_notify_backup_reminder"
+        private const val KEY_NOTIFY_DISEASE_THRESHOLD = "pref_notify_disease_threshold"
     }
 }
