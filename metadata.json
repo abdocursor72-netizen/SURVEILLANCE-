@@ -1,0 +1,6 @@
+{
+  "name": "surveillance-maladie",
+  "description": "تطبيق مراقبة الأمراض والفيروسات والآفات الزراعية والحشرات النافعة - BY ABDALKAYOUM MOUSSSAID",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
