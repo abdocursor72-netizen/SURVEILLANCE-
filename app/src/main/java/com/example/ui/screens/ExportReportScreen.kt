@@ -41,6 +41,9 @@ import com.example.data.preferences.AppPreferences
 import com.example.ui.ReportViewModel
 import com.example.ui.export.ReportExportHelper
 import com.example.ui.theme.*
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import java.io.File
 
 @Composable
 fun ExportReportScreen(
@@ -328,45 +331,49 @@ fun ExportReportScreen(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         // 1. Virus Section
-                        ReportDocSection(
-                            number = 1,
-                            title = "Virus",
-                            barColor = Color(0xFFDC2626),
-                            col1Header = "Type de Virus",
-                            col2Header = "Total",
-                            col3Header = "Lignes/Observation",
-                            items = viruses,
-                            isVirusSection = true
-                        )
-
-                        Spacer(modifier = Modifier.height(20.dp))
+                        if (viewModel.prefs.exportIncludeViruses) {
+                            ReportDocSection(
+                                number = 1,
+                                title = "Virus",
+                                barColor = Color(0xFFDC2626),
+                                col1Header = "Type de Virus",
+                                col2Header = "Total",
+                                col3Header = "Lignes/Observation",
+                                items = viruses,
+                                isVirusSection = true
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
 
                         // 2. Ravageurs et Maladies Section
-                        ReportDocSection(
-                            number = 2,
-                            title = "Ravageurs et Maladies",
-                            barColor = Color(0xFFD97706),
-                            col1Header = "Ravageurs",
-                            col2Header = "Gravité",
-                            col3Header = "Lignes/Observation",
-                            items = pests
-                        )
-
-                        Spacer(modifier = Modifier.height(20.dp))
+                        if (viewModel.prefs.exportIncludePests) {
+                            ReportDocSection(
+                                number = 2,
+                                title = "Ravageurs et Maladies",
+                                barColor = Color(0xFFD97706),
+                                col1Header = "Ravageurs",
+                                col2Header = "Gravité",
+                                col3Header = "Lignes/Observation",
+                                items = pests
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                        }
 
                         // 3. Auxiliaires Section
-                        ReportDocSection(
-                            number = 3,
-                            title = "Auxiliaires",
-                            barColor = Color(0xFF16A34A),
-                            col1Header = "Auxiliaires",
-                            col2Header = "Niveau",
-                            col3Header = "Lignes/Observation",
-                            items = beneficials
-                        )
+                        if (viewModel.prefs.exportIncludeBeneficials) {
+                            ReportDocSection(
+                                number = 3,
+                                title = "Auxiliaires",
+                                barColor = Color(0xFF16A34A),
+                                col1Header = "Auxiliaires",
+                                col2Header = "Niveau",
+                                col3Header = "Lignes/Observation",
+                                items = beneficials
+                            )
+                        }
 
-                        // 4. Remarques Spéciales (if any)
-                        if (report.specialNotes.isNotBlank()) {
+                        // 4. Remarques Spéciales (if any and enabled)
+                        if (viewModel.prefs.exportIncludeSpecialNotes && report.specialNotes.isNotBlank()) {
                             Spacer(modifier = Modifier.height(20.dp))
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -399,6 +406,57 @@ fun ExportReportScreen(
                                     color = Color(0xFF1E293B),
                                     modifier = Modifier.padding(10.dp)
                                 )
+                            }
+                        }
+
+                        // 5. Photo & Diagnostic Culture (if attached)
+                        if (report.imageUri.isNotBlank() && File(report.imageUri).exists()) {
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .width(3.dp)
+                                        .height(16.dp)
+                                        .clip(RoundedCornerShape(1.dp))
+                                        .background(Color(0xFF059669))
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "5. Photo & Diagnostic Culture",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF059669)
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFFF8FAFC),
+                                border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(modifier = Modifier.padding(8.dp)) {
+                                    AsyncImage(
+                                        model = File(report.imageUri),
+                                        contentDescription = "Photo de la culture",
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(180.dp)
+                                            .clip(RoundedCornerShape(6.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                    if (report.diseaseNote.isNotBlank()) {
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = "Diagnostic: ${report.diseaseNote}",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color(0xFF1E293B)
+                                        )
+                                    }
+                                }
                             }
                         }
 

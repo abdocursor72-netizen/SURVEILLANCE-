@@ -70,6 +70,18 @@ object ReportExportHelper {
             sb.append("${report.specialNotes}\n\n")
         }
 
+        if (report.diseaseNote.isNotBlank() || report.imageUri.isNotBlank()) {
+            sb.append("| 5. Photo & Diagnostic Culture\n")
+            sb.append("----------------------------------------\n")
+            if (report.diseaseNote.isNotBlank()) {
+                sb.append("Diagnostic: ${report.diseaseNote}\n")
+            }
+            if (report.imageUri.isNotBlank()) {
+                sb.append("Photo de terrain: Attachée au rapport\n")
+            }
+            sb.append("\n")
+        }
+
         sb.append("════════════════════════════════════════\n")
         sb.append("${AppPreferences.APP_TITLE} • ${AppPreferences.DEVELOPER_NAME}\n")
         return sb.toString()

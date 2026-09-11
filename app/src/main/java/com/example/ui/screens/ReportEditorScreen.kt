@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +38,25 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Healing
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import coil.compose.AsyncImage
+import java.io.File
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -93,6 +113,25 @@ fun ReportEditorScreen(viewModel: ReportViewModel) {
     val isPestsExpanded by viewModel.isPestsExpanded.collectAsState()
     val isBeneficialExpanded by viewModel.isBeneficialExpanded.collectAsState()
     val isSpecialNotesExpanded by viewModel.isSpecialNotesExpanded.collectAsState()
+    val isPhotoExpanded by viewModel.isPhotoExpanded.collectAsState()
+
+    val imageUri by viewModel.formImageUri.collectAsState()
+    val diseaseNote by viewModel.formDiseaseNote.collectAsState()
+
+    var isViewingFullPhoto by remember { mutableStateOf(false) }
+
+    val galleryPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            val savedPath = saveImageToInternalStorage(context, uri)
+            if (savedPath != null) {
+                viewModel.setImageUri(savedPath)
+            } else {
+                Toast.makeText(context, "تعذر تحميل الصورة المحددة", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     val isEditing = viewModel.editingReportId != 0L
 
@@ -450,7 +489,246 @@ fun ReportEditorScreen(viewModel: ReportViewModel) {
                 }
             }
 
-            // Accordion 5: الملاحظات الخاصة (Special Notes)
+            // Accordion 5: صورة المحصول والتشخيص (Crop Photo & Diagnosis)
+            item {
+                AccordionCard(
+                    title = if (imageUri.isNotBlank()) "صورة المحصول والتشخيص (مرفقة ✓)" else "صورة المحصول والتشخيص",
+                    icon = Icons.Default.PhotoCamera,
+                    iconColor = if (imageUri.isNotBlank()) Color(0xFF2E7D32) else AccentInfoBlue,
+                    isExpanded = isPhotoExpanded,
+                    onToggle = { viewModel.isPhotoExpanded.value = !isPhotoExpanded }
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        if (imageUri.isBlank()) {
+                            // Empty State with Camera & Upload buttons
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = GrayButtonBg,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.PhotoCamera,
+                                        contentDescription = null,
+                                        tint = EmeraldPrimary,
+                                        modifier = Modifier.size(38.dp)
+                                    )
+                                    Text(
+                                        text = "التقاط أو رفع صورة لتشخيص أمراض المحصول",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Text(
+                                        text = "وجّه الكاميرا نحو الأوراق أو الثمار المصابة أو ارفع صورة لتشخيص وتوثيق الحالة في التقرير.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = TextSecondary,
+                                        textAlign = TextAlign.Center,
+                                        lineHeight = 18.sp
+                                    )
+
+                                    Spacer(modifier = Modifier.height(4.dp))
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Button(
+                                            onClick = { viewModel.openCropCamera() },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(44.dp)
+                                                .testTag("open_camera_button"),
+                                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            Icon(imageVector = Icons.Default.PhotoCamera, contentDescription = null, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("فتح الكاميرا", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                        }
+
+                                        OutlinedButton(
+                                            onClick = {
+                                                galleryPickerLauncher.launch(
+                                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                                )
+                                            },
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(44.dp)
+                                                .testTag("upload_image_button"),
+                                            shape = RoundedCornerShape(10.dp)
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Image, contentDescription = null, modifier = Modifier.size(18.dp))
+                                            Spacer(modifier = Modifier.width(6.dp))
+                                            Text("رفع من المعرض", fontSize = 13.sp)
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            // Image attached state
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color.Black)
+                            ) {
+                                AsyncImage(
+                                    model = File(imageUri),
+                                    contentDescription = "صورة المحصول المرفقة",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(200.dp)
+                                        .clickable { isViewingFullPhoto = true }
+                                        .testTag("attached_crop_image"),
+                                    contentScale = ContentScale.Crop
+                                )
+
+                                // Overlay badge: View Fullscreen
+                                Surface(
+                                    color = Color(0x99000000),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(8.dp)
+                                        .clickable { isViewingFullPhoto = true }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Fullscreen,
+                                            contentDescription = "تكبير",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("تكبير", color = Color.White, fontSize = 11.sp)
+                                    }
+                                }
+                            }
+
+                            // Actions Row: Retake with camera, Replace from gallery, Remove
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { viewModel.openCropCamera() },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Icon(Icons.Default.PhotoCamera, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("التقاط أخرى", fontSize = 12.sp)
+                                }
+
+                                OutlinedButton(
+                                    onClick = {
+                                        galleryPickerLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Icon(Icons.Default.Image, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("استبدال", fontSize = 12.sp)
+                                }
+
+                                OutlinedButton(
+                                    onClick = { viewModel.clearImageUri() },
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = AccentVirusRed),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.testTag("delete_image_button")
+                                ) {
+                                    Icon(Icons.Default.Delete, contentDescription = "حذف الصورة", modifier = Modifier.size(16.dp))
+                                }
+                            }
+
+                            // Disease Diagnosis Note Field
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = "تشخيص وملاحظات صورة المحصول",
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 13.sp
+                                    ),
+                                    color = TextSecondary,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.End
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                OutlinedTextField(
+                                    value = diseaseNote,
+                                    onValueChange = { viewModel.setDiseaseNote(it) },
+                                    placeholder = {
+                                        Text(
+                                            "مثال: أعراض لفحة مبكرة على الأوراق، تبقع، أو عفن ثمار...",
+                                            modifier = Modifier.fillMaxWidth(),
+                                            textAlign = TextAlign.End,
+                                            fontSize = 12.sp
+                                        )
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("disease_note_input"),
+                                    shape = RoundedCornerShape(10.dp),
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(textAlign = TextAlign.End),
+                                    colors = TextFieldDefaults.colors(
+                                        focusedContainerColor = GrayButtonBg,
+                                        unfocusedContainerColor = GrayButtonBg
+                                    )
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                // Quick Disease Diagnosis tags
+                                val quickDiagnoses = listOf(
+                                    "أعراض لفحة متأخرة",
+                                    "تبقع الأوراق",
+                                    "فيروس تجعد الأوراق",
+                                    "إصابة بالذبابة البيضاء",
+                                    "عفن رمادي (بوتريتس)",
+                                    "سليم / فحص دوري"
+                                )
+
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    items(quickDiagnoses) { diag ->
+                                        AssistChip(
+                                            onClick = {
+                                                val updated = if (diseaseNote.isBlank()) diag else "$diseaseNote - $diag"
+                                                viewModel.setDiseaseNote(updated)
+                                            },
+                                            label = { Text(diag, fontSize = 11.sp) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Accordion 6: الملاحظات الخاصة (Special Notes)
             item {
                 AccordionCard(
                     title = "الملاحظات الخاصة",
@@ -638,5 +916,40 @@ fun ReportEditorScreen(viewModel: ReportViewModel) {
                 }
             }
         )
+    }
+
+    // Fullscreen Attached Image Viewer Dialog
+    if (isViewingFullPhoto && imageUri.isNotBlank()) {
+        Dialog(
+            onDismissRequest = { isViewingFullPhoto = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+            ) {
+                AsyncImage(
+                    model = File(imageUri),
+                    contentDescription = "معاينة صورة المحصول كاملة",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                IconButton(
+                    onClick = { isViewingFullPhoto = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(24.dp)
+                        .background(Color(0x88000000), androidx.compose.foundation.shape.CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "إغلاق",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
     }
 }

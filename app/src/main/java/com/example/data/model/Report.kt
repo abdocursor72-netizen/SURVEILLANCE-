@@ -16,5 +16,7 @@ data class Report(
     val samplesJson: String = "",
     val isPinned: Boolean = false,
     val isDeleted: Boolean = false,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val imageUri: String = "",
+    val diseaseNote: String = ""
 )

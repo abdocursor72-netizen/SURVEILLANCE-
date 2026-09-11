@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.NoteAdd
 import androidx.compose.material.icons.filled.PushPin
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -547,6 +548,29 @@ fun ReportCardItem(
                         style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
                         color = TextSecondary
                     )
+                    if (report.imageUri.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = if (report.diseaseNote.isNotBlank()) "صورة: ${report.diseaseNote}" else "مرفقة صورة تشخيص المحصول",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                ),
+                                color = EmeraldPrimary,
+                                maxLines = 1
+                            )
+                            Icon(
+                                imageVector = Icons.Default.PhotoCamera,
+                                contentDescription = null,
+                                tint = EmeraldPrimary,
+                                modifier = Modifier.size(13.dp)
+                            )
+                        }
+                    }
                 }
 
                 // Far right: "الحقل" + Big Number (e.g. "5")

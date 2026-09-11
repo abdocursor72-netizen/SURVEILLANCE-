@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.ui.ReportViewModel
 import com.example.ui.ScreenDestination
 import com.example.ui.screens.ExportReportScreen
+import com.example.ui.screens.CropCameraScreen
 import com.example.ui.screens.ReportEditorScreen
 import com.example.ui.screens.ReportsListScreen
 import com.example.ui.screens.SettingsScreen
@@ -48,10 +49,10 @@ class MainActivity : ComponentActivity() {
                         color = MaterialTheme.colorScheme.background
                     ) {
                         BackHandler(enabled = currentScreen != ScreenDestination.REPORTS_LIST) {
-                            if (currentScreen == ScreenDestination.EXPORT_REPORT) {
-                                viewModel.navigateBackFromExport()
-                            } else {
-                                viewModel.navigateTo(ScreenDestination.REPORTS_LIST)
+                            when (currentScreen) {
+                                ScreenDestination.EXPORT_REPORT -> viewModel.navigateBackFromExport()
+                                ScreenDestination.CROP_CAMERA -> viewModel.navigateBackFromCamera()
+                                else -> viewModel.navigateTo(ScreenDestination.REPORTS_LIST)
                             }
                         }
 
@@ -60,6 +61,7 @@ class MainActivity : ComponentActivity() {
                             ScreenDestination.REPORT_EDITOR -> ReportEditorScreen(viewModel = viewModel)
                             ScreenDestination.SETTINGS -> SettingsScreen(viewModel = viewModel)
                             ScreenDestination.EXPORT_REPORT -> ExportReportScreen(viewModel = viewModel)
+                            ScreenDestination.CROP_CAMERA -> CropCameraScreen(viewModel = viewModel)
                             else -> ReportsListScreen(viewModel = viewModel)
                         }
                     }

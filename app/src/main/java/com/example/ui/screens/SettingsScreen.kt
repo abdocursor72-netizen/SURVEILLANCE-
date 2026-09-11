@@ -59,6 +59,9 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.UploadFile
+import androidx.compose.material.icons.filled.HighQuality
+import androidx.compose.material.icons.filled.FormatListBulleted
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.material.icons.filled.Backup
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Save
@@ -232,15 +235,10 @@ fun SettingsScreen(viewModel: ReportViewModel) {
                     )
                 }
 
-                // 3. التصدير (Export)
+                // 3. التصدير (Export) - Custom expandable card matching user screenshots
                 item {
-                    SettingsCardItem(
-                        title = "التصدير",
-                        subtitle = "تصدير ومشاركة التقارير (صورة، PDF، ملف)",
-                        icon = Icons.Default.FileUpload,
-                        iconTint = AccentPurple,
-                        testTag = "settings_item_export",
-                        onClick = { viewModel.openExportScreenLatest() }
+                    ExportSettingsCard(
+                        viewModel = viewModel
                     )
                 }
 
@@ -425,7 +423,7 @@ fun SettingsScreen(viewModel: ReportViewModel) {
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        // 11-09-2026 • v1.11
+                        // 11-09-2026 • v1.0.12
                         Text(
                             text = "11-09-2026  •  v${AppPreferences.APP_VERSION}",
                             style = MaterialTheme.typography.bodySmall.copy(
@@ -3443,6 +3441,564 @@ fun SamplePillItem(
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
+    }
+}
+
+@Composable
+fun ExportSettingsCard(
+    viewModel: ReportViewModel,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    var isExpanded by remember { mutableStateOf(false) }
+    var currentLang by remember { mutableStateOf(viewModel.prefs.exportLanguage) }
+    var currentQuality by remember { mutableStateOf(viewModel.prefs.exportQuality) }
+
+    var includeViruses by remember { mutableStateOf(viewModel.prefs.exportIncludeViruses) }
+    var includePests by remember { mutableStateOf(viewModel.prefs.exportIncludePests) }
+    var includeBeneficials by remember { mutableStateOf(viewModel.prefs.exportIncludeBeneficials) }
+    var includeNotes by remember { mutableStateOf(viewModel.prefs.exportIncludeSpecialNotes) }
+
+    var isLangExpanded by remember { mutableStateOf(false) }
+    var isElementsExpanded by remember { mutableStateOf(false) }
+    var isQualityExpanded by remember { mutableStateOf(false) }
+
+    val activeElementsCount = listOf(includeViruses, includePests, includeBeneficials, includeNotes).count { it }
+    val totalElements = 4
+
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        modifier = modifier
+            .fillMaxWidth()
+            .testTag("settings_card_export_interactive")
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 14.dp)
+        ) {
+            // Main Card Header (Clickable to expand / collapse)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { isExpanded = !isExpanded }
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Left: Chevron
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowLeft,
+                    contentDescription = if (isExpanded) "طي" else "توسيع",
+                    tint = Color(0xFF64748B),
+                    modifier = Modifier.size(24.dp)
+                )
+
+                // Right: Text + Purple Circular Badge
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "التصدير",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 17.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.height(3.dp))
+                        Text(
+                            text = "اللغة: $currentLang",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Normal
+                            ),
+                            color = Color(0xFF64748B)
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFF3E8FF)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.FileUpload,
+                            contentDescription = "التصدير",
+                            tint = Color(0xFF9333EA),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+            }
+
+            // Expanded Sub-Cards (Matching user's exact design)
+            AnimatedVisibility(visible = isExpanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // Sub-Card 1: لغة التقرير
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { isLangExpanded = !isLangExpanded },
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Icon(
+                                    imageVector = if (isLangExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(22.dp)
+                                )
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(
+                                            text = "لغة التقرير",
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 15.sp
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = currentLang,
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                fontSize = 12.5.sp
+                                            ),
+                                            color = Color(0xFF64748B)
+                                        )
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFE0F2FE)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Translate,
+                                            contentDescription = "لغة التقرير",
+                                            tint = Color(0xFF0284C7),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Language Options Selector
+                            AnimatedVisibility(visible = isLangExpanded) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    HorizontalDivider(color = Color(0xFFF1F5F9))
+                                    listOf(
+                                        "الفرنسية" to "Français (Langue officielle des rapports)",
+                                        "العربية" to "العربية (التقارير باللغة العربية)",
+                                        "الإنجليزية" to "English (International format)"
+                                    ).forEach { (lang, desc) ->
+                                        val isSelected = currentLang == lang
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = if (isSelected) Color(0xFFEFF6FF) else Color(0xFFF8FAFC),
+                                            border = BorderStroke(1.dp, if (isSelected) Color(0xFF0284C7) else Color(0xFFE2E8F0)),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    currentLang = lang
+                                                    viewModel.prefs.exportLanguage = lang
+                                                    Toast.makeText(context, "تم تحديد لغة التقرير: $lang", Toast.LENGTH_SHORT).show()
+                                                }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                if (isSelected) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        tint = Color(0xFF0284C7),
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                } else {
+                                                    Spacer(modifier = Modifier.size(18.dp))
+                                                }
+                                                Column(horizontalAlignment = Alignment.End) {
+                                                    Text(
+                                                        text = lang,
+                                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                            fontSize = 13.5.sp
+                                                        ),
+                                                        color = if (isSelected) Color(0xFF0284C7) else MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                    Text(
+                                                        text = desc,
+                                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                                                        color = TextSecondary
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Sub-Card 2: عناصر التقرير
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { isElementsExpanded = !isElementsExpanded },
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Icon(
+                                    imageVector = if (isElementsExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(22.dp)
+                                )
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(
+                                            text = "عناصر التقرير",
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 15.sp
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "$activeElementsCount مفعلة من $totalElements",
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                fontSize = 12.5.sp
+                                            ),
+                                            color = Color(0xFF64748B)
+                                        )
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFDCFCE7)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.FormatListBulleted,
+                                            contentDescription = "عناصر التقرير",
+                                            tint = Color(0xFF16A34A),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Elements Switches
+                            AnimatedVisibility(visible = isElementsExpanded) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    HorizontalDivider(color = Color(0xFFF1F5F9))
+
+                                    // Element 1: الفيروسات
+                                    ReportElementToggleRow(
+                                        title = "1. الفيروسات (Virus)",
+                                        isChecked = includeViruses,
+                                        onCheckedChange = {
+                                            includeViruses = it
+                                            viewModel.prefs.exportIncludeViruses = it
+                                        }
+                                    )
+
+                                    // Element 2: الآفات والأمراض
+                                    ReportElementToggleRow(
+                                        title = "2. الآفات والأمراض (Ravageurs & Maladies)",
+                                        isChecked = includePests,
+                                        onCheckedChange = {
+                                            includePests = it
+                                            viewModel.prefs.exportIncludePests = it
+                                        }
+                                    )
+
+                                    // Element 3: الحشرات النافعة
+                                    ReportElementToggleRow(
+                                        title = "3. الحشرات النافعة (Auxiliaires)",
+                                        isChecked = includeBeneficials,
+                                        onCheckedChange = {
+                                            includeBeneficials = it
+                                            viewModel.prefs.exportIncludeBeneficials = it
+                                        }
+                                    )
+
+                                    // Element 4: الملاحظات الخاصة
+                                    ReportElementToggleRow(
+                                        title = "4. الملاحظات الخاصة (Remarques Spéciales)",
+                                        isChecked = includeNotes,
+                                        onCheckedChange = {
+                                            includeNotes = it
+                                            viewModel.prefs.exportIncludeSpecialNotes = it
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Sub-Card 3: جودة ملف التقرير
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = MaterialTheme.colorScheme.surface,
+                        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { isQualityExpanded = !isQualityExpanded },
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Icon(
+                                    imageVector = if (isQualityExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = Color(0xFF64748B),
+                                    modifier = Modifier.size(22.dp)
+                                )
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        Text(
+                                            text = "جودة ملف التقرير",
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 15.sp
+                                            ),
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = "الصورة > $currentQuality",
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                fontSize = 12.5.sp
+                                            ),
+                                            color = Color(0xFF64748B)
+                                        )
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFF3E8FF)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.HighQuality,
+                                            contentDescription = "جودة ملف التقرير",
+                                            tint = Color(0xFF9333EA),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Quality Options Selector
+                            AnimatedVisibility(visible = isQualityExpanded) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 10.dp),
+                                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    HorizontalDivider(color = Color(0xFFF1F5F9))
+                                    listOf(
+                                        "عالية" to "دقة فائقة (300 DPI) مناسبة للطباعة والأرشفة",
+                                        "متوسطة" to "دقة متوازنة (150 DPI) سريعة ومثالية للمشاركة",
+                                        "اقتصادية" to "حجم ملف مضغوط (72 DPI) خفيف لواتساب"
+                                    ).forEach { (q, desc) ->
+                                        val isSelected = currentQuality == q
+                                        Surface(
+                                            shape = RoundedCornerShape(10.dp),
+                                            color = if (isSelected) Color(0xFFFAF5FF) else Color(0xFFF8FAFC),
+                                            border = BorderStroke(1.dp, if (isSelected) Color(0xFF9333EA) else Color(0xFFE2E8F0)),
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clickable {
+                                                    currentQuality = q
+                                                    viewModel.prefs.exportQuality = q
+                                                    Toast.makeText(context, "تم ضبط جودة الصورة: $q", Toast.LENGTH_SHORT).show()
+                                                }
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                if (isSelected) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        tint = Color(0xFF9333EA),
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                } else {
+                                                    Spacer(modifier = Modifier.size(18.dp))
+                                                }
+                                                Column(horizontalAlignment = Alignment.End) {
+                                                    Text(
+                                                        text = "الصورة > $q",
+                                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                            fontSize = 13.5.sp
+                                                        ),
+                                                        color = if (isSelected) Color(0xFF9333EA) else MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                    Text(
+                                                        text = desc,
+                                                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.5.sp),
+                                                        color = TextSecondary
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Direct Open Export Screen Button
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Button(
+                        onClick = { viewModel.openExportScreenLatest() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9333EA)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = null,
+                                modifier = Modifier.size(17.dp),
+                                tint = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "فتح شاشة التصدير والمعاينة ↗",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                ),
+                                color = Color.White
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReportElementToggleRow(
+    title: String,
+    isChecked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color(0xFFF8FAFC))
+            .padding(horizontal = 12.dp, vertical = 7.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Switch(
+            checked = isChecked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFF16A34A),
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = Color(0xFFCBD5E1)
+            )
+        )
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = FontWeight.Medium,
+                fontSize = 13.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

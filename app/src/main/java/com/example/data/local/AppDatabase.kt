@@ -12,15 +12,23 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
+import androidx.room.migration.Migration
 import java.util.Locale
 
-@Database(entities = [Report::class], version = 1, exportSchema = false)
+@Database(entities = [Report::class], version = 2, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun reportDao(): ReportDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE reports ADD COLUMN imageUri TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE reports ADD COLUMN diseaseNote TEXT NOT NULL DEFAULT ''")
+            }
+        }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -29,6 +37,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "sf_surveillance.db"
                 )
+                    .addMigrations(MIGRATION_1_2)
                     .addCallback(DatabaseCallback(context.applicationContext))
                     .build()
                 INSTANCE = instance

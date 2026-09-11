@@ -114,6 +114,8 @@ object BackupManager {
             rObj.put("isPinned", r.isPinned)
             rObj.put("isDeleted", r.isDeleted)
             rObj.put("timestamp", r.timestamp)
+            rObj.put("imageUri", r.imageUri)
+            rObj.put("diseaseNote", r.diseaseNote)
             reportsArray.put(rObj)
         }
         root.put("reports", reportsArray)
@@ -192,7 +194,9 @@ object BackupManager {
                             samplesJson = rObj.optString("samplesJson", "[]"),
                             isPinned = rObj.optBoolean("isPinned", false),
                             isDeleted = rObj.optBoolean("isDeleted", false),
-                            timestamp = rObj.optLong("timestamp", System.currentTimeMillis())
+                            timestamp = rObj.optLong("timestamp", System.currentTimeMillis()),
+                            imageUri = rObj.optString("imageUri", ""),
+                            diseaseNote = rObj.optString("diseaseNote", "")
                         )
                     )
                 }

@@ -35,7 +35,8 @@ enum class ScreenDestination {
     SETTINGS,
     TRASH,
     SAMPLES_CATALOG,
-    EXPORT_REPORT
+    EXPORT_REPORT,
+    CROP_CAMERA
 }
 
 enum class SortOrder {
@@ -132,6 +133,8 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
     val formSavedDate = MutableStateFlow("")
     val formSpecialNotes = MutableStateFlow("")
     val formSamples = MutableStateFlow<List<SampleItem>>(emptyList())
+    val formImageUri = MutableStateFlow("")
+    val formDiseaseNote = MutableStateFlow("")
 
     // Registered samples list (configured in Settings)
     val registeredSamples = MutableStateFlow<List<SampleItem>>(emptyList())
@@ -220,15 +223,41 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
     val isPestsExpanded = MutableStateFlow(false)
     val isBeneficialExpanded = MutableStateFlow(false)
     val isSpecialNotesExpanded = MutableStateFlow(false)
+    val isPhotoExpanded = MutableStateFlow(false)
 
     private var previousScreen: ScreenDestination = ScreenDestination.REPORTS_LIST
     val exportReportTarget = MutableStateFlow<Report?>(null)
 
     fun navigateTo(destination: ScreenDestination) {
-        if (destination != ScreenDestination.EXPORT_REPORT) {
+        if (destination != ScreenDestination.EXPORT_REPORT && destination != ScreenDestination.CROP_CAMERA) {
             previousScreen = _currentScreen.value
         }
         _currentScreen.value = destination
+    }
+
+    fun openCropCamera() {
+        previousScreen = _currentScreen.value
+        _currentScreen.value = ScreenDestination.CROP_CAMERA
+    }
+
+    fun navigateBackFromCamera() {
+        _currentScreen.value = ScreenDestination.REPORT_EDITOR
+    }
+
+    fun setImageUri(uri: String) {
+        formImageUri.value = uri
+        if (uri.isNotBlank()) {
+            isPhotoExpanded.value = true
+        }
+    }
+
+    fun clearImageUri() {
+        formImageUri.value = ""
+        formDiseaseNote.value = ""
+    }
+
+    fun setDiseaseNote(note: String) {
+        formDiseaseNote.value = note
     }
 
     fun openExportScreen(report: Report) {
@@ -262,6 +291,8 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
         formObservationDate.value = today
         formSavedDate.value = today
         formSpecialNotes.value = ""
+        formImageUri.value = ""
+        formDiseaseNote.value = ""
         formSamples.value = registeredSamples.value.map { it.copy() }
 
         // Accordion states
@@ -270,6 +301,7 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
         isPestsExpanded.value = false
         isBeneficialExpanded.value = false
         isSpecialNotesExpanded.value = false
+        isPhotoExpanded.value = false
 
         _currentScreen.value = ScreenDestination.REPORT_EDITOR
     }
@@ -282,6 +314,8 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
         formObservationDate.value = report.observationDate
         formSavedDate.value = report.savedDate
         formSpecialNotes.value = report.specialNotes
+        formImageUri.value = report.imageUri
+        formDiseaseNote.value = report.diseaseNote
 
         val items = SampleItem.listFromJson(report.samplesJson)
         formSamples.value = if (items.isNotEmpty()) items else SampleItem.getDefaultSamples().map { it.copy() }
@@ -291,6 +325,7 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
         isPestsExpanded.value = false
         isBeneficialExpanded.value = false
         isSpecialNotesExpanded.value = false
+        isPhotoExpanded.value = report.imageUri.isNotBlank()
 
         _currentScreen.value = ScreenDestination.REPORT_EDITOR
     }
@@ -354,7 +389,9 @@ class ReportViewModel(application: Application) : AndroidViewModel(application) 
                 samplesJson = SampleItem.listToJson(formSamples.value),
                 isPinned = false,
                 isDeleted = false,
-                timestamp = System.currentTimeMillis()
+                timestamp = System.currentTimeMillis(),
+                imageUri = formImageUri.value,
+                diseaseNote = formDiseaseNote.value.trim()
             )
 
             repository.saveReport(report)
